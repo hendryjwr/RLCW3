@@ -27,16 +27,10 @@ next_state, reward, done, info = env.step(0)
 # step returns ob (ram in this case), reward, if game is over (Bool) and a dict of lives remaining
 
 
-for i in range(1):
-    print(env.step(1))
-    env.render()   
-print('env is: ', env)
-
-
 # class Agent(Agent):
 class Agent():
 
-    def __init__(self, state_dim, action_dim, save_dir): # Add save_dir if implemented (idk what this is atm)
+    def __init__(self, state_dim, action_dim, save_dir): 
         # super().__init__(state_dim, action_dim, save_dir)
         self.burnin = 1e4  
         self.learn_every = 3  
@@ -84,16 +78,16 @@ class Agent():
             action_values = self.net(state, model="online")
             action = torch.argmax(action_values, axis=1).item()
 
-            self.epsilon *= self.epsilon_rate_decay
-            self.epsilon = max(self.epsilon_min_value, self.epsilon)
+        self.epsilon *= self.epsilon_rate_decay
+        self.epsilon = max(self.epsilon_min_value, self.epsilon)
 
-            self.curr_step += 1
-            return action
+        self.curr_step += 1
+        return action
 
     def memory_storage(self, state, next_state, action, reward, done):
         """Adds recent experience to memory (S, a) and what S' and r was observed. Keeping something semi tabular for an accurate lookup. Replay Buffer"""
         
-        if self.use_cuda():
+        if self.use_cuda:
             state = torch.tensor(state).cuda()
             next_state = torch.tensor(next_state).cuda()
             action = torch.tensor([action]).cuda()
@@ -160,7 +154,7 @@ class Agent():
         if self.curr_step % self.learn_every != 0:
             return None, None
 
-        state, next_state, action, reward, done = self.recall()
+        state, next_state, action, reward, done = self.memory_recall()
 
         td_est = self.td_estimate(state, action)
 
@@ -193,9 +187,9 @@ class AssaultNet(nn.Module):
     
     def forward(self, input, model):
         if model == "online":
-            return self.online(input)
+            return self.online(input.float())
         elif model == "target":
-            return self.target(input)
+            return self.target(input.float())
 
 class MetricLogger:
     def __init__(self, save_dir):
@@ -309,8 +303,9 @@ agent = Agent(state_dim=128, action_dim=env.action_space.n, save_dir=save_dir)
 
 logger = MetricLogger(save_dir)
 
-episodes = 10
+episodes = 100
 for e in range(episodes):
+    print('entering state', e)
     
     state = env.reset()
 
@@ -324,7 +319,7 @@ for e in range(episodes):
         if done:
             break
     
-    logger.log_episode()()
+    logger.log_episode()
 
     if e % 20 == 0:
         logger.record(episode=e, epsilon=agent.epsilon, step=agent.curr_step)
