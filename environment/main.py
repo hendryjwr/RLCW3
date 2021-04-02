@@ -3,6 +3,7 @@ import torch
 from torch import nn
 import numpy as np
 from collections import deque
+import random
 
 import gym 
 
@@ -30,12 +31,16 @@ for i in range(1):
 print('env is: ', env)
 
 
-class Agent:
+class Agent(Agent):
 
-    def __init__(self, state_dim=128, action_dim=6 ): # Add save_dir if implemented (idk what this is atm)
+    def __init__(self, state_dim, action_dim, save_dir): # Add save_dir if implemented (idk what this is atm)
+        super().__init__(state_dim, action_dim, save_dir)
+        self.memory = deque(maxlen=100000)
+        self.batch_size = 32
+
         self.state_dim = state_dim 
         self.action_dim = action_dim
-        # self.save_dir = save_dir
+        self.save_dir = save_dir
 
         self.use_cuda = torch.cuda.is_available()
 
@@ -64,7 +69,8 @@ class Agent:
                 state = torch.tensor(state).cuda()
             else:
                 state = torch.tensor(state)
-            # action_values = self.net(state, model="online") # Still need to understand what exactly self.net is here.
+            # get the action_values from the neural net by passing in the state. (gets back Q values for us to argmax)
+            # action_values = self.net(state, model="online") # The net here is the neural network (duh)
             # action = torch.argmax(action_values, axis=1).item()
             action = None
 
@@ -74,13 +80,29 @@ class Agent:
             self.curr_step += 1
             return action
 
-    def memory_storage(self, experience):
-        """Adds recent experience to memory"""
-        pass
+    def memory_storage(self, state, next_state, action, reward, done):
+        """Adds recent experience to memory (S, a) and what S' and r was observed. Keeping something semi tabular for an accurate lookup. Replay Buffer"""
+        
+        if self.use_cuda():
+            state = torch.tensor(state).cuda()
+            next_state = torch.tensor(next_state).cuda()
+            action = torch.tensor([action]).cuda()
+            reward = torch.tensor([reward]).cuda()
+            done = torch.tensor([done]).cuda()
+        else:
+            state = torch.tensor(state)
+            next_state = torch.tensor(next_state)
+            action = torch.tensor([action])
+            reward = torch.tensor([reward])
+            done = torch.tensor([done])
+
+        self.memory.append((state, next_state, action, reward, done))
 
     def memory_recall(self):
-        """Picks an experience from memory"""
-        pass
+        """Picks a batch of experiences from memory"""
+        batch = random.sample(self.memory, self.batch_size)
+        state, next_state, action, reward, done = map(torch.stack, zip(*batch)) # Not 100% sure what exactly how this map function works
+        return state, next_state, action.squeeze(), reward.squeeze(), done.squeeze() # Look into why we need to squeeze this
 
     def learn(self):
         """Update Q values with mini-batch"""
