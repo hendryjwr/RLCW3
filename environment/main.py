@@ -277,7 +277,7 @@ class MetricLogger:
             f"Mean Q Value {mean_ep_q} - "
             f"Time Delta {time_since_last_record} - "
             f"Time {datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')}"
-        )
+        ) 
 
         with open(self.save_log, "a") as f:
             f.write(
@@ -303,14 +303,18 @@ agent = Agent(state_dim=128, action_dim=env.action_space.n, save_dir=save_dir)
 
 logger = MetricLogger(save_dir)
 
-episodes = 100
+episodes = 10000
 for e in range(episodes):
-    print('entering state', e)
+    if e % 10 == 0:
+        print('entering state', e)
     
     state = env.reset()
 
     while True:
         action = agent.act(state)
+        # if e % 5 == 0:
+        #     env.render()
+        # time.sleep(0.01) Watch in real time
         next_state, reward, done, info = env.step(action)
         agent.memory_storage(state, next_state, action, reward, done)
         q, loss = agent.learn()
@@ -318,7 +322,8 @@ for e in range(episodes):
         state = next_state
         if done:
             break
-    
+    # if e % 5 == 0:
+    #     env.close() # Not working for some reason
     logger.log_episode()
 
     if e % 20 == 0:
