@@ -13,7 +13,7 @@ env = gym.make('Assault-ram-v0')
 env.reset()
 next_state, reward, done, info = env.step(0)
 
-# get_action_meanings() = ['NOOP', 'FIRE', 'UP', 'RIGHT', 'LEFT', 'RIGHTFIRE', 'LEFTFIRE']  (6 possible actions for this game)
+# get_action_meanings() = ['NOOP', 'FIRE', 'UP', 'RIGHT', 'LEFT', 'RIGHTFIRE', 'LEFTFIRE']  (7 possible actions for this game)
 # step() = (array([  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,  96, 254,
     #      0,   0,   0,   6, 100, 100, 100,   0,  54,   0,   0,   0, 253,
     #      0,   0, 192,   0, 136, 252,   2,  34, 226,  34, 162,  83, 162,
@@ -27,7 +27,6 @@ next_state, reward, done, info = env.step(0)
 # step returns ob (ram in this case), reward, if game is over (Bool) and a dict of lives remaining
 
 
-# class Agent(Agent):
 class Agent():
 
     def __init__(self, state_dim, action_dim, save_dir): 
@@ -111,10 +110,10 @@ class Agent():
     def td_estimate(self, state, action):
         current_Q = self.net(state, model="online")[
             np.arange(0, self.batch_size), action
-        ] # Q_online(s, a)
+        ] # Q_online(s, a) [[0...31], [32 actions]]
         return current_Q
 
-    @torch.no_grad()
+    # @torch.no_grad()
     def td_target(self, reward, next_state, done):
         next_state_Q = self.net(next_state, model="online")
         best_action = torch.argmax(next_state_Q, axis=1)
