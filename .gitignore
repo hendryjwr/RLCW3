@@ -130,4 +130,4 @@ dmypy.json
 
 
 /environment/checkpoints/
-/vizdoomgym/vizdoomgym
+# /vizdoomgym/vizdoomgym
